@@ -11,8 +11,8 @@ from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 SEED = 0 
 # SEED = None <- Uncomment this line to randomize the object positions
 
-REPO_NAME = 'omy_pnp'
-NUM_DEMO = 80 # Number of demonstrations to collect
+REPO_NAME = ''
+NUM_DEMO = 50 # Number of demonstrations to collect
 ROOT = "./demo_data" # The root directory to save the demonstrations
 
 
@@ -35,7 +35,7 @@ if create_new:
     dataset = LeRobotDataset.create(
                 repo_id=REPO_NAME,
                 root = ROOT, 
-                robot_type="omy",
+                robot_type="panda",
                 fps=20, # 20 frames per second
                 features={
                     "observation.image": {
@@ -50,13 +50,13 @@ if create_new:
                     },
                     "observation.state": {
                         "dtype": "float32",
-                        "shape": (6,),
-                        "names": ["state"], # x, y, z, roll, pitch, yaw
+                        "shape": (8,),
+                        "names": ["state"], # 7 joint angles and 1 gripper
                     },
                     "action": {
                         "dtype": "float32",
-                        "shape": (7,),
-                        "names": ["action"], # 6 joint angles and 1 gripper
+                        "shape": (8,),
+                        "names": ["action"], # 7 joint angles and 1 gripper
                     },
                     "obj_init": {
                         "dtype": "float32",
@@ -72,7 +72,7 @@ else:
     dataset = LeRobotDataset(REPO_NAME, root=ROOT)
 
 
-action = np.zeros(7)
+action = np.zeros(8)
 episode_id = 0
 record_flag = False # Start recording when the robot starts moving
 while PnPEnv.env.is_viewer_alive() and episode_id < NUM_DEMO:
@@ -108,14 +108,16 @@ while PnPEnv.env.is_viewer_alive() and episode_id < NUM_DEMO:
         agent_image = np.array(agent_image)
         wrist_image = np.array(wrist_image)
         joint_q = PnPEnv.step(action)
-        action = PnPEnv.q[:7] # 6 joint angles and 1 gripper
+        action = PnPEnv.q[:8] # 7 joint angles and 1 gripper
+        print("Action:", action)
+        print("observation state:", joint_q[:8])
         action = action.astype(np.float32)
         if record_flag:
             # Add the frame to the dataset
             dataset.add_frame( {
                     "observation.image": agent_image,
                     "observation.wrist_image": wrist_image,
-                    "observation.state": joint_q[:6], 
+                    "observation.state": joint_q[:8], 
                     "action": action,
                     "obj_init": PnPEnv.obj_init_pose,
                     # "task": PnPEnv.instruction,

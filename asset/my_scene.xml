@@ -28,7 +28,7 @@
     <!-- UR52 -->
    
 
-    <include file="./robotis_omy/omy.xml" />
+    <include file="./robotis_my/panda.xml" />
     <include file="./objaverse/plate_11/model_new.xml"/>
     <include file="./objaverse/blue_cube.xml"/>
     <include file="./objaverse/red_cube.xml"/>

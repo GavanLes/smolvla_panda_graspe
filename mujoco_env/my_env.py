@@ -36,7 +36,14 @@ class SimpleEnv:
             'joint4',
             'joint5',
             'joint6',
+            'joint7',
         ]
+        self.tcp_body = 'ee_body'          # 先用 body，和你现有 get_pR_body/solve_ik 兼容
+        # Panda 两指关节（qpos 里是 0~0.04）
+        self.gripper_joint = 'finger_joint1'  # 读一个就够（equality 约束会让两指相等）
+        # Panda actuator8 的 ctrl 是 0~255（你 XML 里写死的）
+        self.GRIP_OPEN  = 1
+        self.GRIP_CLOSE = 0
 
         # 方块与盘子在 MuJoCo 里的 body 名
         self.red_cube_name = 'red_cube'
@@ -69,15 +76,18 @@ class SimpleEnv:
         #     np.random.seed(seed=seed)
 
         # 1. 机械臂 IK 到一个固定初始位姿
-        q_init = np.deg2rad([0, 0, 0, 0, 0, 0])
-        q_zero, ik_err_stack, ik_info = solve_ik(
-            env=self.env,
-            joint_names_for_ik=self.joint_names,
-            body_name_trgt='tcp_link',
-            q_init=q_init,  # ik from zero pose
-            p_trgt=np.array([0.3, 0.0, 1.0]),
-            R_trgt=rpy2r(np.deg2rad([90, -0., 90])),
-        )
+        q_init = np.deg2rad([0, 0, 0, 0, 0, 0, 0])
+        
+        q_zero = np.array([0,-0.086, 0,-2.66065482,0,2.5,0.78], dtype=float)
+        # q_zero, ik_err_stack, ik_info = solve_ik(
+        #     env=self.env,
+        #     joint_names_for_ik=self.joint_names,
+        #     body_name_trgt=self.tcp_body,
+        #     q_init=q_init,  # ik from zero pose
+        #     p_trgt=np.array([0.3, 0, 1.0]), #位姿
+        #     R_trgt=rpy2r(np.deg2rad([0, 0, 0])), #角度
+        # )
+        print("q_init(rad) =", q_init)
         self.env.forward(q=q_zero, joint_names=self.joint_names, increase_tick=False)
 
         # 2. 固定盘子位置
@@ -135,8 +145,8 @@ class SimpleEnv:
 
         # 5. 保存初始状态
         self.last_q = copy.deepcopy(q_zero)
-        self.q = np.concatenate([q_zero, np.array([0.0] * 4)])
-        self.p0, self.R0 = self.env.get_pR_body(body_name='tcp_link')
+        self.q = np.concatenate([q_zero, np.array([0.0] * 1)])
+        self.p0, self.R0 = self.env.get_pR_body(body_name=self.tcp_body)
         cube_red_init_pose, cube_blue_init_pose, plate_init_pose = self.get_obj_pose()
         # obj_init_pose: [red(6) + blue(6) + plate(6)] = 18 维
         self.obj_init_pose = np.concatenate(
@@ -187,7 +197,7 @@ class SimpleEnv:
             q, ik_err_stack, ik_info = solve_ik(
                 env=self.env,
                 joint_names_for_ik=self.joint_names,
-                body_name_trgt='tcp_link',
+                body_name_trgt=self.tcp_body,
                 q_init=q,
                 p_trgt=self.p0,
                 R_trgt=self.R0,
@@ -205,8 +215,8 @@ class SimpleEnv:
         else:
             raise ValueError('action_type not recognized')
 
-        gripper_cmd = np.array([action[-1]] * 4)
-        gripper_cmd[[1, 3]] *= 0.8
+        grip = self.GRIP_OPEN if float(action[-1]) > 0.5 else self.GRIP_CLOSE   # 255 or 0
+        gripper_cmd = np.array([grip], dtype=float)
         self.compute_q = q
         q = np.concatenate([q, gripper_cmd])
 
@@ -231,7 +241,7 @@ class SimpleEnv:
         self.rgb_agent = self.env.get_fixed_cam_rgb(
             cam_name='agentview')
         self.rgb_ego = self.env.get_fixed_cam_rgb(
-            cam_name='egocentric')
+            cam_name='hand_cam')
         self.rgb_side = self.env.get_fixed_cam_rgb(
             cam_name='sideview')
         return self.rgb_agent, self.rgb_ego
@@ -241,7 +251,7 @@ class SimpleEnv:
         Render the environment
         """
         self.env.plot_time()
-        p_current, R_current = self.env.get_pR_body(body_name='tcp_link')
+        p_current, R_current = self.env.get_pR_body(body_name=self.tcp_body)
         R_current = R_current @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])
         self.env.plot_sphere(p=p_current, r=0.02, rgba=[0.95, 0.05, 0.05, 0.5])
         self.env.plot_capsule(p=p_current, R=R_current, r=0.01, h=0.2, rgba=[0.05, 0.95, 0.05, 0.5])
@@ -265,8 +275,8 @@ class SimpleEnv:
         Get the joint state of the robot
         """
         qpos = self.env.get_qpos_joints(joint_names=self.joint_names)
-        gripper = self.env.get_qpos_joint('rh_r1')
-        gripper_cmd = 1.0 if gripper[0] > 0.5 else 0.0
+        gripper = self.env.get_qpos_joint(self.gripper_joint)
+        gripper_cmd = 1.0 if gripper > 0.02 else 0.0
         return np.concatenate([qpos, [gripper_cmd]], dtype=np.float32)
 
     def teleop_robot(self):
@@ -313,8 +323,8 @@ class SimpleEnv:
         """
         delta = self.compute_q - self.last_q
         self.last_q = copy.deepcopy(self.compute_q)
-        gripper = self.env.get_qpos_joint('rh_r1')
-        gripper_cmd = 1.0 if gripper[0] > 0.5 else 0.0
+        gripper = self.env.get_qpos_joint(self.gripper_joint)
+        gripper_cmd = 1.0 if gripper > 0.02 else 0.0
         return np.concatenate([delta, [gripper_cmd]], dtype=np.float32)
 
     def check_success(self):
@@ -326,8 +336,8 @@ class SimpleEnv:
         p_plate = self.env.get_p_body(self.plate_name)
         if (np.linalg.norm(p_cube[:2] - p_plate[:2]) < 0.05 and
                 np.linalg.norm(p_cube[2] - p_plate[2]) < 0.05 and
-                self.env.get_qpos_joint('rh_r1') < 0.1):
-            p_tcp = self.env.get_p_body('tcp_link')[2]
+                self.env.get_qpos_joint(self.gripper_joint) > 0.02):
+            p_tcp = self.env.get_p_body(self.tcp_body)[2]
             if p_tcp > 0.9:
                 return True
         return False
@@ -360,6 +370,6 @@ class SimpleEnv:
         """
         get the end effector pose of the robot + gripper state
         """
-        p, R = self.env.get_pR_body(body_name='tcp_link')
+        p, R = self.env.get_pR_body(body_name=self.tcp_body)
         rpy = r2rpy(R)
         return np.concatenate([p, rpy], dtype=np.float32)
