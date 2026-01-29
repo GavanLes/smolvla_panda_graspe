@@ -1,0 +1,36 @@
+<mujoco model="red_cube">
+
+    <worldbody>
+        <body name="red_cube">
+            <freejoint/>
+
+            <geom name="red_cube_geom"
+                  type="box"
+                  size="0.04 0.03 0.03"
+                  density="1000"
+                  friction="0.95 0.3 0.1"
+                  solimp="0.998 0.998 0.001"
+                  solref="0.001 1"
+                  rgba="1 0 0 1"/>
+
+            <!-- 顶部 site（红） -->
+            <site name="top_site_red_cube"
+                  pos="0 0 0.03"
+                  size="0.005"
+                  rgba="0 0 0 0" />
+
+            <!-- 底部 site（红） -->
+            <site name="bottom_site_red_cube"
+                  pos="0 0 -0.03"
+                  size="0.005"
+                  rgba="0 0 0 0" />
+
+            <!-- 侧面 site（红） -->
+            <site name="side_site_red_cube"
+                  pos="0.03 0 0"
+                  size="0.005"
+                  rgba="0 0 0 0" />
+        </body>
+    </worldbody>
+
+</mujoco>
