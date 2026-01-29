@@ -29,9 +29,10 @@
    
 
     <include file="./robotis_my/panda.xml" />
+    
+    <include file="./objaverse/mug_5/model_new.xml"/>
     <include file="./objaverse/plate_11/model_new.xml"/>
-    <include file="./objaverse/blue_cube.xml"/>
-    <include file="./objaverse/red_cube.xml"/>
+    <include file="./objaverse/mug_6/model_new.xml"/>
 
 
 

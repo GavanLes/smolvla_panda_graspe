@@ -45,11 +45,6 @@ class SimpleEnv:
         self.GRIP_OPEN  = 1
         self.GRIP_CLOSE = 0
 
-        # 方块与盘子在 MuJoCo 里的 body 名
-        self.red_cube_name = 'red_cube'
-        self.blue_cube_name = 'blue_cube'
-        self.plate_name = 'body_obj_plate_11'
-
         self.init_viewer()
         self.reset(seed)
 
@@ -92,8 +87,8 @@ class SimpleEnv:
 
         # 2. 固定盘子位置
         plate_xyz = np.array([0.3, -0.3, 0.82])
-        self.env.set_p_base_body(body_name=self.plate_name, p=plate_xyz)
-        self.env.set_R_base_body(body_name=self.plate_name, R=np.eye(3, 3))
+        self.env.set_p_base_body(body_name='body_obj_plate_11', p=plate_xyz)
+        self.env.set_R_base_body(body_name='body_obj_plate_11', R=np.eye(3, 3))
 
         # === 定义两个区域（区域 A / 区域 B） ===
         region_A = dict(
@@ -107,7 +102,7 @@ class SimpleEnv:
             z_range=[0.83, 0.83],
         )
 
-        # 随机决定是否交换区域：False=红在A蓝在B，True=红在B蓝在A
+        
         swap = random.random() < 0.5
 
         if not swap:
@@ -117,30 +112,28 @@ class SimpleEnv:
             red_region = region_B
             blue_region = region_A
 
-        # 3. 随机摆放红方块（在分配好的 red_region 里）
+
+        # Set object positions
         obj_xyzs = sample_xyzs(
             1,
             x_range=red_region["x_range"],
             y_range=red_region["y_range"],
             z_range=red_region["z_range"],
-            min_dist=0.10,
-            xy_margin=0.0,
+            min_dist  = 0.16,
+            xy_margin = 0.0
         )
-        self.env.set_p_base_body(body_name=self.red_cube_name, p=obj_xyzs[0, :])
-        self.env.set_R_base_body(body_name=self.red_cube_name, R=np.eye(3, 3))
-
-        # 4. 随机摆放蓝方块（在分配好的 blue_region 里）
+        self.env.set_p_base_body(body_name='body_obj_mug_5',p=obj_xyzs[0,:])
+        self.env.set_R_base_body(body_name='body_obj_mug_5',R=np.eye(3,3))
         obj_xyzs = sample_xyzs(
             1,
             x_range=blue_region["x_range"],
             y_range=blue_region["y_range"],
             z_range=blue_region["z_range"],
-            min_dist=0.10,
-            xy_margin=0.0,
+            min_dist  = 0.16,
+            xy_margin = 0.0
         )
-        self.env.set_p_base_body(body_name=self.blue_cube_name, p=obj_xyzs[0, :])
-        self.env.set_R_base_body(body_name=self.blue_cube_name, R=np.eye(3, 3))
-
+        self.env.set_p_base_body(body_name='body_obj_mug_6',p=obj_xyzs[0,:])
+        self.env.set_R_base_body(body_name='body_obj_mug_6',R=np.eye(3,3))
         self.env.forward(increase_tick=False)
 
         # 5. 保存初始状态
@@ -164,27 +157,27 @@ class SimpleEnv:
         self.gripper_state = False
         self.past_chars = []
 
-    def set_instruction(self, given=None):
+    def set_instruction(self, given = None):
         """
         Set the instruction for the task
         """
         if given is None:
             obj_candidates = ['red', 'blue']
             obj1 = random.choice(obj_candidates)
-            # 文本改成 cube
-            self.instruction = f'Place the {obj1} cube on the plate.'
+            self.instruction = f'Place the {obj1} mug on the plate.'
             if obj1 == 'red':
-                self.obj_target = self.red_cube_name
+                self.obj_target = 'body_obj_mug_5'
             else:
-                self.obj_target = self.blue_cube_name
+                self.obj_target = 'body_obj_mug_6'
         else:
             self.instruction = given
             if 'red' in self.instruction:
-                self.obj_target = self.red_cube_name
+                self.obj_target = 'body_obj_mug_5'
             elif 'blue' in self.instruction:
-                self.obj_target = self.blue_cube_name
+                self.obj_target = 'body_obj_mug_6'
             else:
                 raise ValueError('Instruction does not contain a valid object color (red or blue).')
+
 
     def step(self, action):
         """
@@ -333,7 +326,7 @@ class SimpleEnv:
         + Gripper should be open and move upward above 0.9
         """
         p_cube = self.env.get_p_body(self.obj_target)
-        p_plate = self.env.get_p_body(self.plate_name)
+        p_plate = self.env.get_p_body('body_obj_plate_11')
         if (np.linalg.norm(p_cube[:2] - p_plate[:2]) < 0.05 and
                 np.linalg.norm(p_cube[2] - p_plate[2]) < 0.05 and
                 self.env.get_qpos_joint(self.gripper_joint) > 0.02):
@@ -349,22 +342,28 @@ class SimpleEnv:
             p_cube_blue: np.array, position of the blue cube
             p_plate: np.array, position of the plate
         """
-        p_cube_red = self.env.get_p_body(self.red_cube_name)
-        p_cube_blue = self.env.get_p_body(self.blue_cube_name)
-        p_plate = self.env.get_p_body(self.plate_name)
-        return p_cube_red, p_cube_blue, p_plate
+        p_mug_red = self.env.get_p_body('body_obj_mug_5')
+        p_mug_blue = self.env.get_p_body('body_obj_mug_6')
+        p_plate = self.env.get_p_body('body_obj_plate_11')
 
-    def set_obj_pose(self, p_cube_red, p_cube_blue, p_plate):
-        """
+        return p_mug_red, p_mug_blue, p_plate
+
+    def set_obj_pose(self, p_mug_red, p_mug_blue, p_plate):
+        '''
         Set the object poses
-        """
-        self.env.set_p_base_body(body_name=self.red_cube_name, p=p_cube_red)
-        self.env.set_R_base_body(body_name=self.red_cube_name, R=np.eye(3, 3))
-        self.env.set_p_base_body(body_name=self.blue_cube_name, p=p_cube_blue)
-        self.env.set_R_base_body(body_name=self.blue_cube_name, R=np.eye(3, 3))
-        self.env.set_p_base_body(body_name=self.plate_name, p=p_plate)
-        self.env.set_R_base_body(body_name=self.plate_name, R=np.eye(3, 3))
+        args:
+            p_mug_red: np.array, position of the red mug
+            p_mug_blue: np.array, position of the blue mug
+            p_plate: np.array, position of the plate
+        '''
+        self.env.set_p_base_body(body_name='body_obj_mug_5',p=p_mug_red)
+        self.env.set_R_base_body(body_name='body_obj_mug_5',R=np.eye(3,3))
+        self.env.set_p_base_body(body_name='body_obj_mug_6',p=p_mug_blue)
+        self.env.set_R_base_body(body_name='body_obj_mug_6',R=np.eye(3,3))
+        self.env.set_p_base_body(body_name='body_obj_plate_11',p=p_plate)
+        self.env.set_R_base_body(body_name='body_obj_plate_11',R=np.eye(3,3))
         self.step_env()
+
 
     def get_ee_pose(self):
         """
