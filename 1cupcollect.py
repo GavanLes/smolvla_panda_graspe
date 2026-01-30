@@ -12,7 +12,7 @@ SEED = 0
 # SEED = None <- Uncomment this line to randomize the object positions
 
 REPO_NAME = 'omy_pnp_language'
-NUM_DEMO = 50 # Number of demonstrations to collect
+NUM_DEMO = 30 # Number of demonstrations to collect
 ROOT = "./demo_data_cup_ramdom" # The root directory to save the demonstrations
 
 xml_path = './asset/example_scene_y2.xml'

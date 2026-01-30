@@ -11,6 +11,6 @@ pd.set_option("display.float_format", "{:.6f}".format)
 df = pd.read_parquet('./demo_data/data/chunk-000/episode_000000.parquet')
 
 # ★ 打印前 10 行，完整显示数组，不会有“...” ★
-print(df[['observation.state','action']].head(10))
+print(df[['observation.state','action']].head(100))
 
 #demo_data

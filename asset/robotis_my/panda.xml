@@ -134,7 +134,7 @@
               contype="0" conaffinity="0"/>
     </body>
 
-    <light name="top" pos="0 0 2" mode="trackcom"/>
+    <!-- <light name="top" pos="0 0 2" mode="trackcom"/> -->
     <body name="link0" pos="0 0 0.8715" childclass="panda">
       <inertial mass="0.629769" pos="-0.041018 -0.00014 0.049974"
         fullinertia="0.00315 0.00388 0.004285 8.2904e-7 0.00015 8.2299e-6"/>
@@ -239,9 +239,9 @@
                       <!-- 手爪摄像头 -->
                       <camera name="hand_cam"
                               mode="fixed"
-                              pos="0.1 0 -0.03"
-                              euler="3.15 0.3 80.1"
-                              fovy="60"/>
+                              pos="0.08 0 0.01"
+                              euler="3.15 0.25 80.1"
+                              fovy="90"/>
 
 
 

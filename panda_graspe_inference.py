@@ -27,7 +27,7 @@ cfg = SmolVLAConfig(input_features=input_features, output_features=output_featur
 delta_timestamps = resolve_delta_timestamps(cfg, dataset_metadata)
 
 # We can now instantiate our policy with this config and the dataset stats.
-policy = SmolVLAPolicy.from_pretrained('./ckpt/smolvla_cube/checkpoints/last/pretrained_model', dataset_stats=dataset_metadata.stats)
+policy = SmolVLAPolicy.from_pretrained('./ckpt/smolvla/pretrained_model', dataset_stats=dataset_metadata.stats)
 # You can load the trained policy from hub if you don't have the resources to train it.
 # policy = SmolVLAPolicy.from_pretrained("Jeongeun/omy_pnp_pi0", config=cfg, dataset_stats=dataset_metadata.stats)
 policy.to(device)
@@ -54,6 +54,7 @@ policy.eval()
 save_image = True
 IMG_TRANSFORM = get_default_transform()
 while PnPEnv.env.is_viewer_alive():
+    
     PnPEnv.step_env()
     if PnPEnv.env.loop_every(HZ=20):
         # Check if the task is completed
@@ -67,7 +68,7 @@ while PnPEnv.env.is_viewer_alive():
             save_image = False
         # Get the current state of the environment
         
-        state = PnPEnv.get_joint_state()[:6]
+        state = PnPEnv.get_joint_state()[:8]
         # Get the current image from the environment
         image, wirst_image = PnPEnv.grab_image()
         image = Image.fromarray(image)
@@ -84,7 +85,7 @@ while PnPEnv.env.is_viewer_alive():
         }
         # Select an action
         action = policy.select_action(data)
-        action = action[0,:7].cpu().detach().numpy()
+        action = action[0,:8].cpu().detach().numpy()
         # Take a step in the environment
         _ = PnPEnv.step(action)
         PnPEnv.render()
