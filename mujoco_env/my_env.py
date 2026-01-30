@@ -86,24 +86,24 @@ class SimpleEnv:
         self.env.forward(q=q_zero, joint_names=self.joint_names, increase_tick=False)
 
         # 2. 固定盘子位置
-        plate_xyz = np.array([0.3, -0.3, 0.82])
+        plate_xyz = np.array([0.4, -0.3, 0.82])
         self.env.set_p_base_body(body_name='body_obj_plate_11', p=plate_xyz)
         self.env.set_R_base_body(body_name='body_obj_plate_11', R=np.eye(3, 3))
 
         # === 定义两个区域（区域 A / 区域 B） ===
         region_A = dict(
-            x_range=[0.25, 0.40],
-            y_range=[-0.05, 0.05],
+            x_range=[0.4, 0.4],
+            y_range=[-0, 0],
             z_range=[0.83, 0.83],
         )
         region_B = dict(
-            x_range=[0.25, 0.35],
-            y_range=[0.15, 0.25],
+            x_range=[0.4, 0.4],
+            y_range=[0.25, 0.25],
             z_range=[0.83, 0.83],
         )
 
         
-        swap = random.random() < 0.5
+        swap = 1#random.random() < 0.5
 
         if not swap:
             red_region = region_A

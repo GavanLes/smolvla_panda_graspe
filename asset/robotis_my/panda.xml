@@ -234,7 +234,7 @@
                       <geom mesh="hand_4" material="off_white" class="visual"/>
                       <geom mesh="hand_c" class="collision"/>
                         <body name="ee_body" pos="0 0 0.107" euler="-1.570796 0 0">
-                          <site name="ee_site" pos="0 0 0" size="0.01" rgba="1 0 0 1"/>
+
                         </body>
                       <!-- 手爪摄像头 -->
                       <camera name="hand_cam"
