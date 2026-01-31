@@ -14,9 +14,9 @@ device = 'cuda'
 
 
 try:
-    dataset_metadata = LeRobotDatasetMetadata("omy_pnp_language", root='./demo_data')
+    dataset_metadata = LeRobotDatasetMetadata("omy_pnp_language", root='./panda_demo_data')
 except:
-    dataset_metadata = LeRobotDatasetMetadata("omy_pnp_language", root='./omy_pnp_language')
+    dataset_metadata = LeRobotDatasetMetadata("omy_pnp_language", root='./omy_pnp_languagpanda_e')
 features = dataset_to_policy_features(dataset_metadata.features)
 output_features = {key: ft for key, ft in features.items() if ft.type is FeatureType.ACTION}
 input_features = {key: ft for key, ft in features.items() if key not in output_features}
@@ -27,7 +27,7 @@ cfg = SmolVLAConfig(input_features=input_features, output_features=output_featur
 delta_timestamps = resolve_delta_timestamps(cfg, dataset_metadata)
 
 # We can now instantiate our policy with this config and the dataset stats.
-policy = SmolVLAPolicy.from_pretrained('./ckpt/smolvla/pretrained_model', dataset_stats=dataset_metadata.stats)
+policy = SmolVLAPolicy.from_pretrained('./ckpt/smolvla_bendi/checkpoints/001000/pretrained_model', dataset_stats=dataset_metadata.stats)
 # You can load the trained policy from hub if you don't have the resources to train it.
 # policy = SmolVLAPolicy.from_pretrained("Jeongeun/omy_pnp_pi0", config=cfg, dataset_stats=dataset_metadata.stats)
 policy.to(device)
