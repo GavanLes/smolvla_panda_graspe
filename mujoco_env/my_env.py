@@ -98,7 +98,7 @@ class SimpleEnv:
         )
         region_B = dict(
             x_range=[0.4, 0.4],
-            y_range=[0.25, 0.25],
+            y_range=[0.2, 0.2],
             z_range=[0.83, 0.83],
         )
 
@@ -250,7 +250,7 @@ class SimpleEnv:
         self.env.plot_capsule(p=p_current, R=R_current, r=0.01, h=0.2, rgba=[0.05, 0.95, 0.05, 0.5])
         rgb_egocentric_view = add_title_to_img(self.rgb_ego, text='Egocentric View', shape=(640, 480))
         rgb_agent_view = add_title_to_img(self.rgb_agent, text='Agent View', shape=(640, 480))
-        self.env.plot_T(p=np.array([0.1, 0.0, 1.0]), label=f"Episode {idx}", plot_axis=False, plot_sphere=False)
+        #self.env.plot_T(p=np.array([0.1, 0.0, 1.0]), label=f"Episode {idx}", plot_axis=False, plot_sphere=False)
         self.env.viewer_rgb_overlay(rgb_agent_view, loc='top right')
         self.env.viewer_rgb_overlay(rgb_egocentric_view, loc='bottom right')
         if teleop:
