@@ -90,51 +90,80 @@ class SimpleEnv:
         self.env.set_p_base_body(body_name='body_obj_plate_11', p=plate_xyz)
         self.env.set_R_base_body(body_name='body_obj_plate_11', R=np.eye(3, 3))
 
-        # === 定义两个区域（区域 A / 区域 B） ===
-        region_A = dict(
-            x_range=[0.4, 0.4],
-            y_range=[-0, 0],
-            z_range=[0.83, 0.83],
-        )
-        region_B = dict(
-            x_range=[0.4, 0.4],
-            y_range=[0.2, 0.2],
-            z_range=[0.83, 0.83],
-        )
+        # # === 一个生成区域（给点范围就行，别用完全相等）===
+        # x_min, x_max = 0.30, 0.50
+        # y_min, y_max = -0.10, 0.30# 10 15 20 25 30
+        # z = 0.83
 
-        
-        swap = 1#random.random() < 0.5
+        # 
 
-        if not swap:
-            red_region = region_A
-            blue_region = region_B
+        # # 1) 红杯：5cm×5cm 网格扫描（x 先加满，再 y +5cm）
+        # step = 0.05  # 5cm（单位通常是 m）
+
+        # # 第一次进来时初始化网格点与索引（不改 __init__ 也能用）
+        # if not hasattr(self, "_red_x_list"):
+        #     # x 固定取 0.30/0.35/0.40/0.45/0.50 m
+        #     self._red_x_list = np.array([0.30, 0.35, 0.40, 0.45, 0.50], dtype=np.float32)
+
+        #     # y 固定取 0.10/0.15/0.20/0.25/0.30 m
+        #     self._red_y_list = np.array([ -0.10, -0.05, 0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30], dtype=np.float32)
+
+        #     self._red_xi = 0
+        #     self._red_yi = 0
+        #     print(f"Initialized red cup grid with {len(self._red_x_list)} x points and {len(self._red_y_list)} y points.")
+
+
+
+        # xr = float(self._red_x_list[self._red_xi])
+        # yr = float(self._red_y_list[self._red_yi])
+
+        # # 更新到下一个点：x 走完 -> x 归零，y + step；y 走完 -> 回到起点
+        # self._red_xi += 1
+        # if self._red_xi >= len(self._red_x_list):
+        #     self._red_xi = 0
+        #     self._red_yi += 1
+        #     if self._red_yi >= len(self._red_y_list):
+        #         self._red_yi = 0
+
+        # p_red = np.array([xr, yr, z], dtype=float)
+        # self.env.set_p_base_body('body_obj_mug_5', p_red)
+        # self.env.set_R_base_body('body_obj_mug_5', np.eye(3))
+        x_min, x_max = 0.30, 0.50
+        y_min, y_max = -0.10, 0.30
+        z = 0.83
+        EXCLUDE_R = 0.12
+
+        xr = float(np.random.uniform(x_min, x_max))
+        yr = float(np.random.uniform(y_min, y_max))
+
+        p_red = np.array([xr, yr, z], dtype=float)
+        self.env.set_p_base_body('body_obj_mug_5', p_red)
+        self.env.set_R_base_body('body_obj_mug_5', np.eye(3))
+        # 2) 再采蓝杯：一直采到离红杯够远
+        for _ in range(5000):
+            xb = np.random.uniform(x_min, x_max)
+            yb = np.random.uniform(y_min, y_max)
+            if np.hypot(xb - xr, yb - yr) >= EXCLUDE_R:
+                p_blue = np.array([xb, yb, z], dtype=float)
+                break
         else:
-            red_region = region_B
-            blue_region = region_A
+            raise RuntimeError("采不到蓝杯：区域太小或 EXCLUDE_R 太大")
 
+        self.env.set_p_base_body('body_obj_mug_6', p_blue)
+        self.env.set_R_base_body('body_obj_mug_6', np.eye(3))
 
-        # Set object positions
-        obj_xyzs = sample_xyzs(
-            1,
-            x_range=red_region["x_range"],
-            y_range=red_region["y_range"],
-            z_range=red_region["z_range"],
-            min_dist  = 0.16,
-            xy_margin = 0.0
-        )
-        self.env.set_p_base_body(body_name='body_obj_mug_5',p=obj_xyzs[0,:])
-        self.env.set_R_base_body(body_name='body_obj_mug_5',R=np.eye(3,3))
-        obj_xyzs = sample_xyzs(
-            1,
-            x_range=blue_region["x_range"],
-            y_range=blue_region["y_range"],
-            z_range=blue_region["z_range"],
-            min_dist  = 0.16,
-            xy_margin = 0.0
-        )
-        self.env.set_p_base_body(body_name='body_obj_mug_6',p=obj_xyzs[0,:])
-        self.env.set_R_base_body(body_name='body_obj_mug_6',R=np.eye(3,3))
         self.env.forward(increase_tick=False)
+
+
+        # 保存：生成区域（用于 render 里画出来）
+        self.spawn_bounds = (x_min, x_max, y_min, y_max, z)
+
+        # （可选）保存：红杯中心 + 排除半径（用于画红杯附近“划掉”的圈）
+        self.red_xy = p_red[:2].copy()
+        self.exclude_r = EXCLUDE_R
+
+
+
 
         # 5. 保存初始状态
         self.last_q = copy.deepcopy(q_zero)
@@ -261,6 +290,50 @@ class SimpleEnv:
         if getattr(self, 'instruction', None) is not None:
             language_instructions = self.instruction
             self.env.viewer_text_overlay(text1='Language Instructions', text2=language_instructions)
+                # ===== 画生成区域（viewer 里可见，用小球点线框出来）=====
+        if hasattr(self, "spawn_bounds"):
+            x_min, x_max, y_min, y_max, z = self.spawn_bounds
+            z0 = z + 0.002  # 稍微抬一点，避免和桌面重合闪烁
+
+            # 4 个角（大一点好看）
+            corners = [
+                (x_min, y_min, z0),
+                (x_min, y_max, z0),
+                (x_max, y_min, z0),
+                (x_max, y_max, z0),
+            ]
+            for c in corners:
+                self.env.plot_sphere(p=np.array(c), r=0.008, rgba=[1, 1, 0, 0.9])  # 黄点角标
+
+            # 4 条边：用很多小球串起来（最不依赖朝向）
+            n = 2
+            for t in np.linspace(0.0, 1.0, n):
+                # 下边 y=y_min
+                self.env.plot_sphere(p=np.array([x_min + t*(x_max-x_min), y_min, z0]),
+                                    r=0.004, rgba=[1, 1, 1, 0.7])
+                # 上边 y=y_max
+                self.env.plot_sphere(p=np.array([x_min + t*(x_max-x_min), y_max, z0]),
+                                    r=0.004, rgba=[1, 1, 1, 0.7])
+                # 左边 x=x_min
+                self.env.plot_sphere(p=np.array([x_min, y_min + t*(y_max-y_min), z0]),
+                                    r=0.004, rgba=[1, 1, 1, 0.7])
+                # 右边 x=x_max
+                self.env.plot_sphere(p=np.array([x_max, y_min + t*(y_max-y_min), z0]),
+                                    r=0.004, rgba=[1, 1, 1, 0.7])
+
+        # # =====（可选）画红杯附近“划掉”的排除圈 =====
+        # if hasattr(self, "red_xy") and hasattr(self, "exclude_r"):
+        #     z0 = (self.spawn_bounds[4] if hasattr(self, "spawn_bounds") else 0.83) + 0.002
+        #     cx, cy = float(self.red_xy[0]), float(self.red_xy[1])
+        #     r = float(self.exclude_r)
+        #     m = 10
+        #     for th in np.linspace(0.0, 2*np.pi, m, endpoint=False):
+        #         self.env.plot_sphere(
+        #             p=np.array([cx + r*np.cos(th), cy + r*np.sin(th), z0]),
+        #             r=0.0035,
+        #             rgba=[1, 0.2, 0.2, 0.8]   # 红色圈
+        #         )
+
         self.env.render()
 
     def get_joint_state(self):

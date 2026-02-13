@@ -12,7 +12,7 @@ SEED = 0
 # SEED = None <- Uncomment this line to randomize the object positions
 
 REPO_NAME = ''
-NUM_DEMO = 50 # Number of demonstrations to collect
+NUM_DEMO = 200 # Number of demonstrations to collect
 ROOT = "./demo_data" # The root directory to save the demonstrations
 
 
@@ -109,8 +109,8 @@ while PnPEnv.env.is_viewer_alive() and episode_id < NUM_DEMO:
         wrist_image = np.array(wrist_image)
         joint_q = PnPEnv.step(action)
         action = PnPEnv.q[:8] # 7 joint angles and 1 gripper
-        print("Action:", action)
-        print("observation state:", joint_q[:8])
+        # print("Action:", action)
+        # print("observation state:", joint_q[:8])
         action = action.astype(np.float32)
         if record_flag:
             # Add the frame to the dataset
